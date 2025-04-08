@@ -56,7 +56,7 @@ export class UserController {
         email: user.email,
         avatar: user.avatar,
         username: user.username,
-        account_type: user.account_type,
+        accountType: user.accountType,
       },
     };
   }

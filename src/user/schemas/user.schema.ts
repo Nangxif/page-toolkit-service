@@ -20,7 +20,7 @@ export class User {
   @Prop({ type: String, required: false })
   username?: string;
   @Prop({ type: String, required: true })
-  account_type: AccountType;
+  accountType: AccountType;
   @Prop({ type: String, required: true })
   token: string;
 }

@@ -33,7 +33,7 @@ export class UserService {
     const token = `Bearer ${this.jwtService.sign(
       {
         id: req.user.githubId,
-        account_type: AccountType.GITHUB,
+        accountType: AccountType.GITHUB,
       },
       { expiresIn: this.configService.get('TOKEN_VALIDITY') },
     )}`;
@@ -60,7 +60,7 @@ export class UserService {
         email: req.user.email,
         avatar: req.user.picture,
         username: req.user.username,
-        account_type: AccountType.GITHUB,
+        accountType: AccountType.GITHUB,
         token,
       });
     }
@@ -116,7 +116,7 @@ export class UserService {
     const token = `Bearer ${this.jwtService.sign(
       {
         id: email,
-        account_type: AccountType.EMAIL,
+        accountType: AccountType.EMAIL,
       },
       { expiresIn: this.configService.get('TOKEN_VALIDITY') },
     )}`;
@@ -126,7 +126,7 @@ export class UserService {
         _id: email,
         email,
         token,
-        account_type: AccountType.EMAIL,
+        accountType: AccountType.EMAIL,
       }),
       'EX',
       Number(this.configService.get('TOKEN_VALIDITY')),
@@ -142,12 +142,12 @@ export class UserService {
         _id: email,
         email,
         token,
-        account_type: AccountType.EMAIL,
+        accountType: AccountType.EMAIL,
       });
     } else {
       await this.userModel.updateOne(
         { _id: email },
-        { email, token, account_type: AccountType.EMAIL },
+        { email, token, accountType: AccountType.EMAIL },
       );
     }
     res.send({
