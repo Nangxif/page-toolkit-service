@@ -12,7 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetEmailCodeDto, VerifyEmailCodeDto } from './dto/user.dto';
 import { ResponseCode } from '../constants';
 
-@Controller()
+@Controller('api')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -34,13 +34,13 @@ export class UserController {
   }
 
   @Post('auth/email/verify')
-  async verifyEmailCode(@Body() body: VerifyEmailCodeDto) {
-    return this.userService.verifyEmailCode(body.email, body.code);
+  async verifyEmailCode(@Body() body: VerifyEmailCodeDto, @Res() res) {
+    this.userService.verifyEmailCode(body, res);
   }
 
   // 获取用户信息
   @Get('user/info')
-  @UseGuards(AuthGuard(['email', 'github']))
+  @UseGuards(AuthGuard(['email']))
   async getUserInfo(@Req() req) {
     const user = await this.userService.getUserInfoById(req.user._id);
     if (!user) {
@@ -55,6 +55,7 @@ export class UserController {
       data: {
         email: user.email,
         avatar: user.avatar,
+        username: user.username,
         account_type: user.account_type,
       },
     };

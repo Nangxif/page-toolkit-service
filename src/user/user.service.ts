@@ -9,6 +9,7 @@ import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { UtilsService } from '../utils/utils.service';
+import { VerifyEmailCodeDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -25,50 +26,51 @@ export class UserService {
   }
 
   async githubLogin(req, res) {
-    console.log('req.user=', req.user);
     if (!req.user) {
       return { code: ResponseCode.ERROR, message: '登录失败' };
     }
-    // 保存或更新用户信息
-    const existingUser = await this.userModel.findOne({
-      _id: req.user.githubId,
-    });
 
-    let user;
-    if (existingUser) {
-      // 更新用户信息
-      user = existingUser;
-    } else {
-      // 创建新用户
-      user = await this.userModel.create({
-        _id: req.user.githubId,
-        email: req.user.email,
-        avatar: req.user.picture,
-        account_type: AccountType.GITHUB,
-      });
-    }
-
-    const token = this.jwtService.sign(
+    const token = `Bearer ${this.jwtService.sign(
       {
         id: req.user.githubId,
         account_type: AccountType.GITHUB,
       },
       { expiresIn: this.configService.get('TOKEN_VALIDITY') },
-    );
+    )}`;
 
-    // 方式1: 将 token 设置在 cookie 中
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      maxAge: Number(this.configService.get('TOKEN_VALIDITY')), // 1天
+    // 保存或更新用户信息
+    const user = await this.userModel.findOne({
+      _id: req.user.githubId,
+    });
+    if (user) {
+      // 更新用户信息
+      await this.userModel.updateOne(
+        { _id: req.user.githubId },
+        {
+          email: req.user.email,
+          avatar: req.user.picture,
+          username: req.user.username,
+          token,
+        },
+      );
+    } else {
+      // 创建新用户
+      await this.userModel.create({
+        _id: req.user.githubId,
+        email: req.user.email,
+        avatar: req.user.picture,
+        username: req.user.username,
+        account_type: AccountType.GITHUB,
+        token,
+      });
+    }
+
+    res.cookie('PAGE_TOOLKIT_TOKEN', token, {
+      httpOnly: false,
+      maxAge: Number(this.configService.get('TOKEN_VALIDITY')),
     });
 
-    return {
-      code: ResponseCode.SUCCESS,
-      message: '登录成功',
-      data: {
-        token,
-      },
-    };
+    res.redirect('http://localhost:8000/UserInfo.html');
   }
 
   // 获取邮箱验证码
@@ -100,7 +102,8 @@ export class UserService {
   }
 
   // 验证邮箱验证码后登陆
-  async verifyEmailCode(email: string, code: string) {
+  async verifyEmailCode(body: VerifyEmailCodeDto, res) {
+    const { email, code } = body;
     const redisCode = await this.redis!.get(email);
     if (!redisCode) {
       return { code: ResponseCode.ERROR, message: '验证码已过期' };
@@ -110,13 +113,13 @@ export class UserService {
     }
     await this.redis!.del(email);
     // 生成token
-    const token = this.jwtService.sign(
+    const token = `Bearer ${this.jwtService.sign(
       {
         id: email,
         account_type: AccountType.EMAIL,
       },
       { expiresIn: this.configService.get('TOKEN_VALIDITY') },
-    );
+    )}`;
     this.redis!.set(
       `${CacheKeyPrefix.USER_TOKEN}:${email}`,
       JSON.stringify({
@@ -128,7 +131,10 @@ export class UserService {
       'EX',
       Number(this.configService.get('TOKEN_VALIDITY')),
     );
-
+    res.cookie('PAGE_TOOLKIT_TOKEN', token, {
+      httpOnly: false,
+      maxAge: Number(this.configService.get('TOKEN_VALIDITY')),
+    });
     // 有就更新，没有就创建
     const user = await this.userModel.findOne({ _id: email });
     if (!user) {
@@ -144,13 +150,13 @@ export class UserService {
         { email, token, account_type: AccountType.EMAIL },
       );
     }
-    return {
+    res.send({
       code: ResponseCode.SUCCESS,
       message: '登录成功',
       data: {
         token,
       },
-    };
+    });
   }
 
   async validateToken({ id, token }): Promise<boolean> {

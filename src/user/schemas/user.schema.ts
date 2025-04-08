@@ -17,6 +17,8 @@ export class User {
   email: string;
   @Prop({ type: String, required: false })
   avatar?: string;
+  @Prop({ type: String, required: false })
+  username?: string;
   @Prop({ type: String, required: true })
   account_type: AccountType;
   @Prop({ type: String, required: true })

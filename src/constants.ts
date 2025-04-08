@@ -4,5 +4,5 @@ export const ResponseCode = {
 };
 
 export const CacheKeyPrefix = {
-  USER_TOKEN: 'page_query_text_user_token',
+  USER_TOKEN: 'page_toolkit_user_token',
 };

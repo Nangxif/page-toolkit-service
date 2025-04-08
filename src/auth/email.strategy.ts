@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserService } from '../user/user.service';
+import { Request } from 'express';
+
 @Injectable()
 export class EmailStrategy extends PassportStrategy(Strategy, 'email') {
   constructor(
