@@ -2,6 +2,7 @@
 export enum AccountType {
   EMAIL = 'email',
   GITHUB = 'github',
+  PASSWORD = 'password',
 }
 
 export enum PaymentWay {

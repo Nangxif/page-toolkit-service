@@ -12,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import {
   GetEmailCodeDto,
   PayApplyDto,
+  UpdatePasswordDto,
   VerifyEmailCodeDto,
 } from './dto/user.dto';
 import { ResponseCode } from '../constants';
@@ -42,6 +43,12 @@ export class UserController {
     this.userService.verifyEmailCode(body, res);
   }
 
+  @Post('user/update/password')
+  @UseGuards(AuthGuard(['email']))
+  async updatePassword(@Req() req, @Body() body: UpdatePasswordDto) {
+    return this.userService.updatePassword(req.user, body);
+  }
+
   // 获取用户信息
   @Get('user/info')
   @UseGuards(AuthGuard(['email']))
@@ -70,5 +77,12 @@ export class UserController {
   @UseGuards(AuthGuard(['email']))
   async payApply(@Req() req, @Body() body: PayApplyDto) {
     return await this.userService.payApply(req.user, body);
+  }
+
+  // 获取支付信息
+  @Get('user/pay/apply/info')
+  @UseGuards(AuthGuard(['email']))
+  async getPayApplyInfo(@Req() req) {
+    return await this.userService.getPayApplyInfo(req.user);
   }
 }

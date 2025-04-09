@@ -21,6 +21,8 @@ export class User {
   username?: string;
   @Prop({ type: String, required: true })
   accountType: AccountType;
+  @Prop({ type: String, required: false })
+  password?: string;
   @Prop({ type: String, required: true })
   token: string;
   @Prop({ type: String, required: false })

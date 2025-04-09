@@ -15,6 +15,12 @@ export class VerifyEmailCodeDto {
   code: string;
 }
 
+export class UpdatePasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  password: string;
+}
+
 export class LoginDto {
   @IsNotEmpty()
   @IsString()

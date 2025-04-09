@@ -9,7 +9,11 @@ import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { UtilsService } from '../utils/utils.service';
-import { PayApplyDto, VerifyEmailCodeDto } from './dto/user.dto';
+import {
+  PayApplyDto,
+  UpdatePasswordDto,
+  VerifyEmailCodeDto,
+} from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -159,6 +163,15 @@ export class UserService {
     });
   }
 
+  async updatePassword(user: UserInfo, body: UpdatePasswordDto) {
+    await this.userModel.updateOne({ _id: user._id }, body);
+    return {
+      code: ResponseCode.SUCCESS,
+      message: '密码设置成功',
+      data: true,
+    };
+  }
+
   async validateToken({ id, token }): Promise<boolean> {
     // 先检查 Redis
     const cache_user = await this.redis!.get(
@@ -181,6 +194,14 @@ export class UserService {
   }
 
   async payApply(user: UserInfo, body: PayApplyDto) {
+    const userInfo = await this.userModel.findById(user._id);
+    if (userInfo?.paymentStatus === PaymentStatus.REVIEWED) {
+      return {
+        code: ResponseCode.ERROR,
+        message: '您已具备Page Toolkit所有工具的使用权利，无需重复支付',
+        data: false,
+      };
+    }
     await this.userModel.updateOne(
       { _id: user._id },
       { ...body, paymentStatus: PaymentStatus.PAID_PENDING_REVIEW },
@@ -189,6 +210,20 @@ export class UserService {
       code: ResponseCode.SUCCESS,
       message: '支付申请成功',
       data: true,
+    };
+  }
+
+  async getPayApplyInfo(user: UserInfo) {
+    const userInfo = await this.userModel.findById(user._id);
+
+    return {
+      code: ResponseCode.SUCCESS,
+      message: '获取成功',
+      data: {
+        paymentWay: userInfo?.paymentWay,
+        serialNumber: userInfo?.serialNumber,
+        paymentStatus: userInfo?.paymentStatus,
+      },
     };
   }
 }
