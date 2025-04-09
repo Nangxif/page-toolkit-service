@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { AccountType } from '../../types';
+import { AccountType, PaymentStatus, PaymentWay } from '../../types';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -23,6 +23,12 @@ export class User {
   accountType: AccountType;
   @Prop({ type: String, required: true })
   token: string;
+  @Prop({ type: String, required: false })
+  paymentWay: PaymentWay;
+  @Prop({ type: String, required: false })
+  serialNumber: string;
+  @Prop({ type: String, required: true, default: PaymentStatus.NO_PAY })
+  paymentStatus: PaymentStatus;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

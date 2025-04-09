@@ -3,13 +3,13 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import { AccountType } from '../types';
+import { AccountType, PaymentStatus, UserInfo } from '../types';
 import { CacheKeyPrefix, ResponseCode } from '../constants';
 import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { UtilsService } from '../utils/utils.service';
-import { VerifyEmailCodeDto } from './dto/user.dto';
+import { PayApplyDto, VerifyEmailCodeDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -178,5 +178,17 @@ export class UserService {
       return JSON.parse(user);
     }
     return await this.userModel.findById(id);
+  }
+
+  async payApply(user: UserInfo, body: PayApplyDto) {
+    await this.userModel.updateOne(
+      { _id: user._id },
+      { ...body, paymentStatus: PaymentStatus.PAID_PENDING_REVIEW },
+    );
+    return {
+      code: ResponseCode.SUCCESS,
+      message: '支付申请成功',
+      data: true,
+    };
   }
 }

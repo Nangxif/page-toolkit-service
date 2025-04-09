@@ -9,7 +9,11 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from '@nestjs/passport';
-import { GetEmailCodeDto, VerifyEmailCodeDto } from './dto/user.dto';
+import {
+  GetEmailCodeDto,
+  PayApplyDto,
+  VerifyEmailCodeDto,
+} from './dto/user.dto';
 import { ResponseCode } from '../constants';
 
 @Controller('api')
@@ -59,5 +63,12 @@ export class UserController {
         accountType: user.accountType,
       },
     };
+  }
+
+  // 支付申请
+  @Post('user/pay/apply')
+  @UseGuards(AuthGuard(['email']))
+  async payApply(@Req() req, @Body() body: PayApplyDto) {
+    return await this.userService.payApply(req.user, body);
   }
 }
