@@ -21,13 +21,28 @@ export class UpdatePasswordDto {
   password: string;
 }
 
-export class LoginDto {
+export class UpdateUserInfoDto {
+  @IsNotEmpty()
+  @IsString()
+  username: string;
+}
+
+export class EmailLoginDto {
   @IsNotEmpty()
   @IsString()
   email: string;
   @IsNotEmpty()
   @IsString()
   code: string;
+}
+
+export class PasswordLoginDto {
+  @IsNotEmpty()
+  @IsString()
+  email: string;
+  @IsNotEmpty()
+  @IsString()
+  password: string;
 }
 
 export class PayApplyDto {

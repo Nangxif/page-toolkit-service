@@ -17,6 +17,14 @@ export enum PaymentStatus {
   PAID_PENDING_REVIEW = 'PAID_PENDING_REVIEW',
   /** 已审核 */
   REVIEWED = 'REVIEWED',
+  /** 审核不通过 */
+  NO_PASS = 'NO_PASS',
+}
+
+export enum ModelType {
+  Deepseek_Chat = 'DeepSeek_Deepseek_Chat',
+  Gpt_3_5_Turbo = 'Gpt_3_5_Turbo',
+  Moonshot_V1_8k = 'Moonshot_V1_8k',
 }
 
 export type UserInfo = {

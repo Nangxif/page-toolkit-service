@@ -11,8 +11,10 @@ import { UserService } from './user.service';
 import { AuthGuard } from '@nestjs/passport';
 import {
   GetEmailCodeDto,
+  PasswordLoginDto,
   PayApplyDto,
   UpdatePasswordDto,
+  UpdateUserInfoDto,
   VerifyEmailCodeDto,
 } from './dto/user.dto';
 import { ResponseCode } from '../constants';
@@ -43,17 +45,33 @@ export class UserController {
     this.userService.verifyEmailCode(body, res);
   }
 
+  @Post('auth/password/login')
+  async passwordLogin(@Body() body: PasswordLoginDto, @Res() res) {
+    this.userService.passwordLogin(body, res);
+  }
+
+  @Post('auth/logout')
+  @UseGuards(AuthGuard(['normal']))
+  async logout(@Req() req) {
+    await this.userService.logout(req.user);
+    return {
+      code: ResponseCode.SUCCESS,
+      message: '退出成功',
+      data: true,
+    };
+  }
+
   @Post('user/update/password')
-  @UseGuards(AuthGuard(['email']))
+  @UseGuards(AuthGuard(['normal']))
   async updatePassword(@Req() req, @Body() body: UpdatePasswordDto) {
     return this.userService.updatePassword(req.user, body);
   }
 
   // 获取用户信息
   @Get('user/info')
-  @UseGuards(AuthGuard(['email']))
+  @UseGuards(AuthGuard(['normal']))
   async getUserInfo(@Req() req) {
-    const user = await this.userService.getUserInfoById(req.user._id);
+    const user = await this.userService.getUserInfo(req.user);
     if (!user) {
       return {
         code: ResponseCode.ERROR,
@@ -72,16 +90,22 @@ export class UserController {
     };
   }
 
+  @Post('user/info/update')
+  @UseGuards(AuthGuard(['normal']))
+  async updateUserInfo(@Req() req, @Body() body: UpdateUserInfoDto) {
+    return await this.userService.updateUserInfo(req.user, body);
+  }
+
   // 支付申请
   @Post('user/pay/apply')
-  @UseGuards(AuthGuard(['email']))
+  @UseGuards(AuthGuard(['normal']))
   async payApply(@Req() req, @Body() body: PayApplyDto) {
     return await this.userService.payApply(req.user, body);
   }
 
   // 获取支付信息
   @Get('user/pay/apply/info')
-  @UseGuards(AuthGuard(['email']))
+  @UseGuards(AuthGuard(['normal']))
   async getPayApplyInfo(@Req() req) {
     return await this.userService.getPayApplyInfo(req.user);
   }

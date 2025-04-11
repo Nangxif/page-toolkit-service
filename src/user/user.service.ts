@@ -10,14 +10,15 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { UtilsService } from '../utils/utils.service';
 import {
+  PasswordLoginDto,
   PayApplyDto,
   UpdatePasswordDto,
+  UpdateUserInfoDto,
   VerifyEmailCodeDto,
 } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
-  private transporter: any;
   private readonly redis: Redis | null;
   constructor(
     private readonly redisService: RedisService,
@@ -163,6 +164,66 @@ export class UserService {
     });
   }
 
+  // 邮箱密码登陆
+  async passwordLogin(body: PasswordLoginDto, res) {
+    const { email, password } = body;
+    const user = await this.userModel.findOne({ _id: email });
+    if (!user) {
+      res.send({
+        code: ResponseCode.ERROR,
+        message: '当前账号不存在或无法通过密码登录，请通过其他方式登录',
+        data: null,
+      });
+      return;
+    }
+    if (password !== user?.password) {
+      res.send({
+        code: ResponseCode.ERROR,
+        message: '密码错误',
+        data: null,
+      });
+      return;
+    }
+    // 生成token
+    const token = `Bearer ${this.jwtService.sign(
+      {
+        id: email,
+        accountType: AccountType.PASSWORD,
+      },
+      { expiresIn: this.configService.get('TOKEN_VALIDITY') },
+    )}`;
+    this.redis!.set(
+      `${CacheKeyPrefix.USER_TOKEN}:${email}`,
+      JSON.stringify({
+        _id: email,
+        email,
+        token,
+        accountType: AccountType.PASSWORD,
+      }),
+      'EX',
+      Number(this.configService.get('TOKEN_VALIDITY')),
+    );
+    res.cookie('PAGE_TOOLKIT_TOKEN', token, {
+      httpOnly: false,
+      maxAge: Number(this.configService.get('TOKEN_VALIDITY')),
+    });
+    await this.userModel.updateOne(
+      { _id: email },
+      { token, accountType: AccountType.PASSWORD },
+    );
+    res.send({
+      code: ResponseCode.SUCCESS,
+      message: '登录成功',
+      data: {
+        token,
+      },
+    });
+  }
+
+  async logout(user: UserInfo) {
+    this.redis!.del(`${CacheKeyPrefix.USER_TOKEN}:${user._id}`);
+  }
+
   async updatePassword(user: UserInfo, body: UpdatePasswordDto) {
     await this.userModel.updateOne({ _id: user._id }, body);
     return {
@@ -193,6 +254,18 @@ export class UserService {
     return await this.userModel.findById(id);
   }
 
+  async getUserInfo(user: UserInfo) {
+    return await this.userModel.findById(user._id);
+  }
+
+  async updateUserInfo(user: UserInfo, body: UpdateUserInfoDto) {
+    await this.userModel.updateOne({ _id: user._id }, body);
+    return {
+      code: ResponseCode.SUCCESS,
+      message: '用户信息更新成功',
+      data: true,
+    };
+  }
   async payApply(user: UserInfo, body: PayApplyDto) {
     const userInfo = await this.userModel.findById(user._id);
     if (userInfo?.paymentStatus === PaymentStatus.REVIEWED) {
@@ -215,7 +288,6 @@ export class UserService {
 
   async getPayApplyInfo(user: UserInfo) {
     const userInfo = await this.userModel.findById(user._id);
-
     return {
       code: ResponseCode.SUCCESS,
       message: '获取成功',
