@@ -23,7 +23,7 @@ export class AIService {
       baseURL: aiModelMap[model].api,
       apiKey,
     });
-    const summary = await this.summarizeText(
+    const { summary, tokenUsage, timeUsed } = await this.summarizeText(
       openai,
       aiModelMap[model].model,
       content,
@@ -31,13 +31,14 @@ export class AIService {
     return {
       code: ResponseCode.SUCCESS,
       message: '成功总结内容',
-      data: { summary },
+      data: { summary, tokenUsage, timeUsed },
     };
   }
 
   // 文本总结函数
   async summarizeText(openai: OpenAI, model, text) {
     try {
+      const startTime = Date.now();
       const completion = await openai.chat.completions.create({
         messages: [
           {
@@ -68,11 +69,29 @@ export class AIService {
         temperature: 0.3, // 降低随机性
         max_tokens: 500,
       });
-
-      return completion.choices[0].message.content;
+      const timeUsed = Date.now() - startTime;
+      // 获取token使用情况
+      const tokenUsage = {
+        promptTokens: completion.usage?.prompt_tokens || 0,
+        completionTokens: completion.usage?.completion_tokens || 0,
+        totalTokens: completion.usage?.total_tokens || 0,
+      };
+      return {
+        summary: completion.choices[0].message.content,
+        tokenUsage,
+        timeUsed,
+      };
     } catch (error) {
       console.error('总结文本时出错:', error);
-      return '总结失败，请稍后再试。';
+      return {
+        summary: '总结失败，请稍后再试。',
+        tokenUsage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+        },
+        timeUsed: 0,
+      };
     }
   }
 }
