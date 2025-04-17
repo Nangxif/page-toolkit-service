@@ -14,12 +14,13 @@ export const aiModelMap = {
     api: 'https://api.deepseek.com',
     model: 'deepseek-chat',
   },
-  [ModelType.Gpt_3_5_Turbo]: {
-    api: 'https://api.openai.com/v1/chat/completions',
-    model: 'gpt-3.5-turbo',
-  },
   [ModelType.Moonshot_V1_8k]: {
     api: 'https://api.moonshot.cn/v1',
     model: 'moonshot-v1-8k',
+  },
+
+  [ModelType.Moonshot_V1_32k]: {
+    api: 'https://api.moonshot.cn/v1',
+    model: 'moonshot-v1-32k',
   },
 };

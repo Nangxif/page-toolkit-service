@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
-import { UserModule } from '../user/user.module';
+import { PaymentApplyModule } from '../payment-apply/payment-apply.module';
 
 @Module({
-  imports: [UserModule],
+  imports: [PaymentApplyModule],
   controllers: [AIController],
   providers: [AIService],
 })

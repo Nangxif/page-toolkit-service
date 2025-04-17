@@ -12,7 +12,6 @@ import { AuthGuard } from '@nestjs/passport';
 import {
   GetEmailCodeDto,
   PasswordLoginDto,
-  PayApplyDto,
   UpdatePasswordDto,
   UpdateUserInfoDto,
   VerifyEmailCodeDto,
@@ -94,19 +93,5 @@ export class UserController {
   @UseGuards(AuthGuard(['normal']))
   async updateUserInfo(@Req() req, @Body() body: UpdateUserInfoDto) {
     return await this.userService.updateUserInfo(req.user, body);
-  }
-
-  // 支付申请
-  @Post('user/pay/apply')
-  @UseGuards(AuthGuard(['normal']))
-  async payApply(@Req() req, @Body() body: PayApplyDto) {
-    return await this.userService.payApply(req.user, body);
-  }
-
-  // 获取支付信息
-  @Get('user/pay/apply/info')
-  @UseGuards(AuthGuard(['normal']))
-  async getPayApplyInfo(@Req() req) {
-    return await this.userService.getPayApplyInfo(req.user);
   }
 }

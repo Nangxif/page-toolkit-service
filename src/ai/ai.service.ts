@@ -3,31 +3,54 @@ import { PaymentStatus, UserInfo } from '../types';
 import { AskModelDto } from './dto/ai.dto';
 import OpenAI from 'openai';
 import { aiModelMap, ResponseCode } from '../constants';
-import { UserService } from '../user/user.service';
+import { PaymentApplyService } from '../payment-apply/payment-apply.service';
 
 @Injectable()
 export class AIService {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly paymentApplyService: PaymentApplyService) {}
   async askModel(user: UserInfo, data: AskModelDto) {
-    const userInfo = await this.userService.getPayApplyInfo(user);
-    if (userInfo.data.paymentStatus !== PaymentStatus.REVIEWED) {
+    const tryUseTimes = await this.paymentApplyService.getTryUseTimes(user);
+
+    const paymentApplyInfo =
+      await this.paymentApplyService.getPaymentApplyInfo(user);
+
+    if (
+      tryUseTimes >= 10 &&
+      paymentApplyInfo?.paymentStatus !== PaymentStatus.PASS
+    ) {
       return {
         code: ResponseCode.ERROR,
-        message: '您的账号暂未开通此功能',
+        message: '您的账号已超过试用次数，请支付后继续使用',
         data: null,
       };
     }
-    const { model, apiKey, content } = data;
+
+    const {
+      model,
+      apiKey,
+      content,
+      systemPrompt,
+      userPrompt,
+      temperature,
+      maxTokens,
+    } = data;
 
     const openai = new OpenAI({
       baseURL: aiModelMap[model].api,
       apiKey,
     });
-    const { summary, tokenUsage, timeUsed } = await this.summarizeText(
+    const { summary, tokenUsage, timeUsed } = await this.summarizeText({
       openai,
-      aiModelMap[model].model,
-      content,
-    );
+      model: aiModelMap[model].model,
+      systemPrompt,
+      userPrompt,
+      text: content,
+      temperature,
+      maxTokens,
+    });
+    if (tryUseTimes < 10) {
+      await this.paymentApplyService.updateTryUseTimes(user);
+    }
     return {
       code: ResponseCode.SUCCESS,
       message: '成功总结内容',
@@ -36,14 +59,41 @@ export class AIService {
   }
 
   // 文本总结函数
-  async summarizeText(openai: OpenAI, model, text) {
+  async summarizeText(params: {
+    openai: OpenAI;
+    model: string;
+    systemPrompt?: string;
+    userPrompt?: string;
+    text: string;
+    temperature?: number;
+    maxTokens?: number;
+  }) {
+    const {
+      openai,
+      model,
+      systemPrompt,
+      userPrompt,
+      text,
+      temperature,
+      maxTokens,
+    } = params;
+    const finalUserPrompt =
+      userPrompt?.replace(/\{\{text\}\}/, text) ||
+      `请为以下页面内容生成专业摘要，要求重点突出、层次分明：
+        ${text}
+       请按照以下格式输出：
+       【核心主题】用一句话概括
+       【关键要点】分点列出3-5个核心内容
+       【详细总结】用一段话综合阐述（可选）`;
     try {
       const startTime = Date.now();
       const completion = await openai.chat.completions.create({
         messages: [
           {
             role: 'system',
-            content: `你是一个专业的智能文本总结助手，请根据以下要求处理用户提供的页面内容：
+            content:
+              systemPrompt ||
+              `你是一个专业的智能文本总结助手，请根据以下要求处理用户提供的页面内容：
             1. 分析文本的主题结构和信息层级
             2. 识别并保留核心观点、关键数据和重要结论
             3. 采用清晰的分点式或段落式输出
@@ -55,19 +105,12 @@ export class AIService {
           },
           {
             role: 'user',
-            content: `请为以下页面内容生成专业摘要，要求重点突出、层次分明：
-                  
-            ${text}
-            
-            请按照以下格式输出：
-            【核心主题】用一句话概括
-            【关键要点】分点列出3-5个核心内容
-            【详细总结】用一段话综合阐述（可选）`,
+            content: finalUserPrompt,
           },
         ],
         model,
-        temperature: 0.3, // 降低随机性
-        max_tokens: 500,
+        temperature: temperature || 0.3, // 降低随机性
+        max_tokens: maxTokens || 1000,
       });
       const timeUsed = Date.now() - startTime;
       // 获取token使用情况
@@ -82,7 +125,7 @@ export class AIService {
         timeUsed,
       };
     } catch (error) {
-      console.error('总结文本时出错:', error);
+      console.error('总结文本时出错:', error?.message);
       return {
         summary: '总结失败，请稍后再试。',
         tokenUsage: {

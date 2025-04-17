@@ -2,15 +2,11 @@ import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { PassportModule } from '@nestjs/passport';
-import { GithubStrategy } from '../auth/github.strategy';
-import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { JwtModule } from '@nestjs/jwt';
-import { NormalStrategy } from '../auth/normal.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { UtilsService } from '../utils/utils.service';
-
+import { PaymentApplyModule } from '../payment-apply/payment-apply.module';
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -24,6 +20,7 @@ import { UtilsService } from '../utils/utils.service';
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    PaymentApplyModule,
   ],
   controllers: [UserController],
   providers: [UserService, UtilsService],

@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ModelType } from 'src/types';
 
 export class AskModelDto {
@@ -13,4 +13,24 @@ export class AskModelDto {
   @IsNotEmpty()
   @IsString()
   content: string;
+
+  // 系统提示词
+  @IsOptional()
+  @IsString()
+  systemPrompt?: string;
+
+  // 用户提示词
+  @IsOptional()
+  @IsString()
+  userPrompt?: string;
+
+  // 随机性
+  @IsOptional()
+  @IsNumber()
+  temperature?: number;
+
+  // 最大token
+  @IsOptional()
+  @IsNumber()
+  maxTokens?: number;
 }

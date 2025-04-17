@@ -8,6 +8,7 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { PassportModule } from '@nestjs/passport';
 import { GithubStrategy } from './auth/github.strategy';
 import { NormalStrategy } from './auth/normal.strategy';
+import { PaymentApplyModule } from './payment-apply/payment-apply.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -34,6 +35,7 @@ import { NormalStrategy } from './auth/normal.strategy';
     }),
     PassportModule,
     UserModule,
+    PaymentApplyModule,
     AIModule,
   ],
   controllers: [],

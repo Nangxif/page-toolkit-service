@@ -1,5 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { PaymentWay } from 'src/types';
+import { IsNotEmpty, IsString } from 'class-validator';
 export class GetEmailCodeDto {
   @IsNotEmpty()
   @IsString()
@@ -43,15 +42,4 @@ export class PasswordLoginDto {
   @IsNotEmpty()
   @IsString()
   password: string;
-}
-
-export class PayApplyDto {
-  @IsNotEmpty()
-  @IsEnum(PaymentWay, {
-    message: 'paymentWay 必须是有效的枚举值',
-  })
-  paymentWay: PaymentWay;
-  @IsNotEmpty()
-  @IsString()
-  serialNumber: string;
 }

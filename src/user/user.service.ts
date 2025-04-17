@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import { AccountType, PaymentStatus, UserInfo } from '../types';
+import { AccountType, UserInfo } from '../types';
 import { CacheKeyPrefix, ResponseCode } from '../constants';
 import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
@@ -11,12 +11,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { UtilsService } from '../utils/utils.service';
 import {
   PasswordLoginDto,
-  PayApplyDto,
   UpdatePasswordDto,
   UpdateUserInfoDto,
   VerifyEmailCodeDto,
 } from './dto/user.dto';
-
+import { PaymentApplyService } from '../payment-apply/payment-apply.service';
 @Injectable()
 export class UserService {
   private readonly redis: Redis | null;
@@ -25,6 +24,7 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly utilsService: UtilsService,
+    private readonly paymentApplyService: PaymentApplyService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {
     this.redis = this.redisService.getOrThrow();
@@ -68,6 +68,7 @@ export class UserService {
         accountType: AccountType.GITHUB,
         token,
       });
+      await this.paymentApplyService.createTryUseTimes(req.user.githubId);
     }
 
     res.cookie('PAGE_TOOLKIT_TOKEN', token, {
@@ -149,6 +150,7 @@ export class UserService {
         token,
         accountType: AccountType.EMAIL,
       });
+      await this.paymentApplyService.createTryUseTimes(email);
     } else {
       await this.userModel.updateOne(
         { _id: email },
@@ -264,38 +266,6 @@ export class UserService {
       code: ResponseCode.SUCCESS,
       message: '用户信息更新成功',
       data: true,
-    };
-  }
-  async payApply(user: UserInfo, body: PayApplyDto) {
-    const userInfo = await this.userModel.findById(user._id);
-    if (userInfo?.paymentStatus === PaymentStatus.REVIEWED) {
-      return {
-        code: ResponseCode.ERROR,
-        message: '您已具备Page Toolkit所有工具的使用权利，无需重复支付',
-        data: false,
-      };
-    }
-    await this.userModel.updateOne(
-      { _id: user._id },
-      { ...body, paymentStatus: PaymentStatus.PAID_PENDING_REVIEW },
-    );
-    return {
-      code: ResponseCode.SUCCESS,
-      message: '支付申请成功',
-      data: true,
-    };
-  }
-
-  async getPayApplyInfo(user: UserInfo) {
-    const userInfo = await this.userModel.findById(user._id);
-    return {
-      code: ResponseCode.SUCCESS,
-      message: '获取成功',
-      data: {
-        paymentWay: userInfo?.paymentWay,
-        serialNumber: userInfo?.serialNumber,
-        paymentStatus: userInfo?.paymentStatus,
-      },
     };
   }
 }
