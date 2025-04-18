@@ -85,7 +85,6 @@ export class PaymentApplyService {
     const tryUseTimes = await this.tryUseTimesModel.findOne({
       _id: user._id,
     });
-    console.log(tryUseTimes);
     if (!tryUseTimes) {
       return 10;
     }
